@@ -1,0 +1,9 @@
+Passolig Bilet
+Passolig Kart
+Passolig Takım Değiştirme
+Passolig Bilet Transferi
+Passolig Kart Yenileme
+Passolig Üyelik
+Passolig Para Yükle
+Passolig Para Çekme
+Passolig Kart Şifresi Alma

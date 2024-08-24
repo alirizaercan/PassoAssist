@@ -3,7 +3,7 @@
 # Web scraping, sentiment analizi, veri kategorilendirme gibi işlemler için yollar tanımlar.
 
 from flask import Blueprint, request, jsonify
-from scripts.scraping import scrape_data
+from scripts.scraping_passo import scrape_data
 from scripts.sentiment_analysis import analyze_sentiment, load_model
 from scripts.categorize import categorize_complaint
 
