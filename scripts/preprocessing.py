@@ -12,9 +12,18 @@ import nltk
 nltk.download('stopwords')
 turkish_stopwords = set(stopwords.words('turkish'))
 
-# Türkçe karakterlerin normalizasyonu için bir fonksiyon
-def normalize_turkish_chars(text):
-    turkish_char_map = str.maketrans("çğıöşü", "cgiosu")
+# Türkçe karakterlerin normalizasyonu ve İngilizce karakterlere dönüşümü için fonksiyon
+def normalize_turkish_chars(text, to_english=False):
+    if to_english:
+        turkish_char_map = str.maketrans(
+            "çğıöşüÇĞİÖŞÜ",  # Türkçe karakterler
+            "cgiosuCGIOSU"   # İngilizce karşılıkları
+        )
+    else:
+        turkish_char_map = str.maketrans(
+            "çğıöşü",  # Türkçe karakterler
+            "cgiosu"   # İngilizce karşılıkları
+        )
     return text.translate(turkish_char_map)
 
 # Belirli semboller ve boşlukları kaldırma fonksiyonu
@@ -36,12 +45,12 @@ def remove_unwanted_chars(text):
     return text.strip()
 
 # Metin işleme fonksiyonu
-def preprocess_text(text, contractions, stopwords):
+def preprocess_text(text, contractions, stopwords, to_english=False):
     if not isinstance(text, str):
         return text  # Eğer metin bir string değilse olduğu gibi döndür
     
     # Türkçe karakterleri normalize etme ve küçük harfe çevirme
-    text = normalize_turkish_chars(text)
+    text = normalize_turkish_chars(text, to_english)
     text = text.replace('İ', 'i').lower()
     
     # Gereksiz semboller, URL'ler, hashtag'ler, mention'lar, sayılar vs. temizleniyor
@@ -59,12 +68,12 @@ def preprocess_text(text, contractions, stopwords):
     return text
 
 # Veri yükleme ve işleme
-def preprocess_data(input_file, output_file, contractions):
+def preprocess_data(input_file, output_file, contractions, to_english=False):
     # Veriyi yükle
     df = pd.read_csv(input_file)
     
     # 'text' sütunundaki metinleri işlemden geçir
-    df['text'] = df['text'].apply(lambda x: preprocess_text(x, contractions, turkish_stopwords))
+    df['text'] = df['text'].apply(lambda x: preprocess_text(x, contractions, turkish_stopwords, to_english))
     
     # İşlenmiş veriyi kaydet
     df.to_csv(output_file, index=False)
@@ -82,4 +91,5 @@ if __name__ == "__main__":
         # Buraya eklemeler yapabilirsiniz.
     }
     
-    preprocess_data(input_file, output_file, contractions)
+    # İngilizce karakterlere dönüşüm yapmak istiyorsanız to_english=True olarak ayarlayın
+    preprocess_data(input_file, output_file, contractions, to_english=True)
