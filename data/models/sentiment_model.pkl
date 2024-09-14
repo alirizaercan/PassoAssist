@@ -1,0 +1,9 @@
+import pickle
+from transformers import BertForSequenceClassification
+
+# Load the model
+model = BertForSequenceClassification.from_pretrained('data/models/sentiment_model')
+
+# Save the model using pickle
+with open('data/models/sentiment_model.pkl', 'wb') as f:
+    pickle.dump(model, f)
