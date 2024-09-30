@@ -1,5 +1,5 @@
 import pandas as pd
-import pickle
+import joblib  # pickle yerine joblib kullanıyoruz
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
@@ -32,13 +32,11 @@ def train_and_save_model(data_path, model_output_path):
     model.fit(X_train, y_train)
     
     # Modeli dosyaya kaydedin
-    with open(model_output_path, "wb") as f:
-        pickle.dump(model, f)
+    joblib.dump(model, model_output_path)  # joblib kullanarak kaydediyoruz
     print(f"Model kaydedildi: {model_output_path}")
 
 def test_model(model_path, sentence):
-    with open(model_path, "rb") as f:
-        model = pickle.load(f)
+    model = joblib.load(model_path)  # joblib kullanarak modeli yüklüyoruz
     
     # Cümleyi tahmin et
     predicted_label = model.predict([sentence])
@@ -47,7 +45,7 @@ def test_model(model_path, sentence):
 if __name__ == "__main__":
     # Veri ve model dosya yolları
     data_path = 'data/processed/cleaned_df.csv'  # Veri setinin yolu
-    model_output_path = 'data/models/konu_model.pkl'  # Eğitilen modelin kaydedileceği yol
+    model_output_path = 'data/models/konu_model.joblib'  # Eğitilen modelin kaydedileceği yol
     
     # Modeli eğit ve kaydet
     train_and_save_model(data_path, model_output_path)

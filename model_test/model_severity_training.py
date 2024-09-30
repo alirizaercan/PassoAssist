@@ -76,7 +76,7 @@ def test_model(model_output_path, input_text):
 if __name__ == "__main__":
     # Veri ve model dosya yolları
     data_path = 'data/processed/cleaned_df.csv'  # Veri setinin yolu
-    model_output_path = 'data/models/severity_classifier.pkl'  # Eğitilen modelin kaydedileceği yol
+    model_output_path = 'data/models/severity_classifier.joblib'  # Eğitilen modelin kaydedileceği yol
     
     # Modeli eğit ve kaydet
     train_and_save_model(data_path, model_output_path)

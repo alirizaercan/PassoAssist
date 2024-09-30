@@ -1,5 +1,5 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split, GridSearchCV
+import pandas as pd 
+from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -78,7 +78,7 @@ def test_model(model_output_path, input_text):
 if __name__ == "__main__":
     # Veri ve model dosya yolları
     data_path = 'data/processed/cleaned_df.csv'  # Veri setinin yolu
-    model_output_path = 'data/models/multilabel/multilabelclassifier.pkl'  # Eğitilen modelin kaydedileceği yol
+    model_output_path = 'data/models/multilabel/multilabelclassifier.joblib'  # Eğitilen modelin kaydedileceği yol
     
     # Modeli eğit ve kaydet
     train_and_save_model(data_path, model_output_path)
