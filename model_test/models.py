@@ -1,202 +1,162 @@
 import pandas as pd
-import joblib  # joblib kütüphanesini kullanıyoruz
-import re
 import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import classification_report, accuracy_score, f1_score
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from sklearn.multiclass import OneVsRestClassifier
 
-# 'konu' değerleri
-konu_labels = [
-    'cagri merkezi yetkinlik', 'diger', 'genel', 'odeme', 'uygulama',
-    'iptal', 'degisiklik', 'uyelik', 'iade', 'transfer', 'fatura'
-]
+def train_random_forest(data_path, model_output_path):
+    # Load the data
+    df = pd.read_csv(data_path)
 
-# Model yolları
-entity_model_path = r'C:\Users\Ali Riza Ercan\Desktop\Data Science\PassoAssist\PassoAssist\data\models\entity_model.joblib'
-konu_model_path = r'C:\Users\Ali Riza Ercan\Desktop\Data Science\PassoAssist\PassoAssist\data\models\konu_model.joblib'
-sentiment_model_path = r'C:\Users\Ali Riza Ercan\Desktop\Data Science\PassoAssist\PassoAssist\data\models\sentiment\saribasmetehan_sentiment_model'
-severity_model_path = r'C:\Users\Ali Riza Ercan\Desktop\Data Science\PassoAssist\PassoAssist\data\models\severity_classifier.joblib'
-multilabel_model_path = r'C:\Users\Ali Riza Ercan\Desktop\Data Science\PassoAssist\PassoAssist\data\models\multilabel\multilabelclassifier.joblib'
+    # Features (X) and target labels (y)
+    X = df['text']
+    y = df[['bilet', 'musteri_hizmetleri', 'odeme', 'uygulama', 'passolig', 'passolig kart', 'diger']]
 
-# Modelleri yükle
-def load_model(path):
-    return joblib.load(path)
+    # TF-IDF vectorization
+    tfidf = TfidfVectorizer(max_features=5000)
+    X_tfidf = tfidf.fit_transform(X)
 
-try:
-    entity_model = load_model(entity_model_path)
-except Exception as e:
-    print(f"Entity model yüklenirken hata oluştu: {e}")
+    # Split the data
+    X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.2, random_state=42)
 
-try:
-    konu_model = load_model(konu_model_path)
-except Exception as e:
-    print(f"Konu model yüklenirken hata oluştu: {e}")
+    # Train model
+    model = OneVsRestClassifier(RandomForestClassifier(
+        n_estimators=200,
+        max_depth=20,
+        min_samples_split=5,
+        class_weight='balanced',
+        random_state=42
+    ))
 
-try:
-    loaded_model = load_model(severity_model_path)
-    if isinstance(loaded_model, tuple):
-        severity_model = loaded_model[0]
+    model.fit(X_train, y_train)
+
+    # Save model
+    joblib.dump((model, tfidf), model_output_path)
+
+    # Evaluate performance
+    y_pred = model.predict(X_test)
+    print("\nRandom Forest Model Performance:")
+    print(classification_report(y_test, y_pred, target_names=y.columns))
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print("F1 Score:", f1_score(y_test, y_pred, average='weighted'))
+
+def train_gradient_boosting(data_path, model_output_path):
+    df = pd.read_csv(data_path)
+
+    X = df['text']
+    y = df['severity']
+
+    tfidf = TfidfVectorizer(max_features=5000)
+    X_tfidf = tfidf.fit_transform(X)
+
+    X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.2, random_state=42)
+
+    model = GradientBoostingClassifier(n_estimators=200, learning_rate=0.1, max_depth=7, min_samples_split=5, random_state=42)
+    model.fit(X_train, y_train)
+
+    joblib.dump((model, tfidf), model_output_path)
+
+    y_pred = model.predict(X_test)
+    print("\nGradient Boosting Model Performance:")
+    print(classification_report(y_test, y_pred))
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+
+def train_transformer_model(data_path, model_output_path):
+    df = pd.read_csv(data_path)
+    texts = df['text'].tolist()
+    labels = df['sentiment'].tolist()
+
+    label_mapping = {'olumlu': 1, 'notr': 0, 'olumsuz': 2}
+    labels = [label_mapping[label] for label in labels]
+
+    tokenizer = AutoTokenizer.from_pretrained("saribasmetehan/bert-base-turkish-sentiment-analysis")
+    model = AutoModelForSequenceClassification.from_pretrained("saribasmetehan/bert-base-turkish-sentiment-analysis", num_labels=3)
+
+    train_encodings = tokenizer(texts, padding=True, truncation=True, return_tensors='pt', max_length=128)
+
+    class Dataset(torch.utils.data.Dataset):
+        def __init__(self, encodings, labels):
+            self.encodings = encodings
+            self.labels = labels
+
+        def __getitem__(self, idx):
+            item = {key: val[idx].contiguous() for key, val in self.encodings.items()}
+            item['labels'] = torch.tensor(self.labels[idx])
+            return item
+
+        def __len__(self):
+            return len(self.labels)
+
+    train_dataset = Dataset(train_encodings, labels)
+
+    training_args = TrainingArguments(
+        output_dir=model_output_path,
+        num_train_epochs=4,
+        per_device_train_batch_size=16,
+        learning_rate=5e-5,
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+    )
+
+    trainer.train()
+    model.save_pretrained(model_output_path)
+    tokenizer.save_pretrained(model_output_path)
+
+def test_model(model_output_path, input_text):
+    # Load model and tokenizer
+    if "transformer" in model_output_path:
+        model = AutoModelForSequenceClassification.from_pretrained(model_output_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_output_path)
+
+        inputs = tokenizer(input_text, return_tensors="pt", truncation=True, padding=True)
+        outputs = model(**inputs)
+        predictions = outputs.logits.argmax(dim=1).item()
+        print(f"Tahmin Edilen Duygu: {predictions}")
     else:
-        severity_model = loaded_model
-except Exception as e:
-    print(f"Severity model yüklenirken hata oluştu: {e}")
+        model, tfidf = joblib.load(model_output_path)
+        input_tfidf = tfidf.transform([input_text])
+        prediction = model.predict(input_tfidf)
 
-try:
-    multilabel_model, tfidf_vectorizer = load_model(multilabel_model_path)
-except Exception as e:
-    print(f"Multilabel model yüklenirken hata oluştu: {e}")
+        # Show predictions
+        print("Tahmin Edilen Etiketler:")
+        print(prediction)
 
-try:
-    tokenizer = AutoTokenizer.from_pretrained(sentiment_model_path)
-    sentiment_model = AutoModelForSequenceClassification.from_pretrained(sentiment_model_path)
-except Exception as e:
-    print(f"Sentiment model yüklenirken hata oluştu: {e}")
-
-# Entity tahmini için gerekli fonksiyonlar
-def correct_spelling(sentence):
-    corrected_spellings = {
-        "passolg": "passolig",
-        "passolig krt": "passolig kart",
-    }
-    words = sentence.split()
-    corrected_words = [corrected_spellings.get(word.lower(), word) for word in words]
-    return ' '.join(corrected_words)
-
-def find_entities(sentence, entity_list):
-    corrected_sentence = correct_spelling(sentence)
-    found_entities = []
-    for entity in entity_list:
-        pattern = rf'\b{entity}(?:\w+)?\b'
-        if re.search(pattern, corrected_sentence, re.IGNORECASE):
-            found_entities.append(entity)
-    return found_entities
-
-def process_sentence(sentence, entity_list):
-    found_entities = find_entities(sentence, entity_list)
-    if found_entities:
-        return "; ".join(found_entities)
-    return "No entity found."
-
-def predict_entity(input_text):
-    entities = ["passo", "passolig", "passolig kart"]
-    return process_sentence(input_text, entities)
-
-def predict_konu(input_text):
-    predicted_label = konu_model.predict([input_text])
-    return konu_labels[predicted_label[0]]
-
-def predict_sentiment(input_text):
-    inputs = tokenizer(input_text, return_tensors="pt", truncation=True, padding=True, max_length=128)
-    with torch.no_grad():
-        sentiment_logits = sentiment_model(**inputs).logits
-        sentiment_prediction = sentiment_logits.argmax().item()
-        predicted_probs = torch.softmax(sentiment_logits, dim=1)[0]
-
-    label_mapping = {1: 'olumlu', 0: 'notr', 2: 'olumsuz'}
-    sentiment_label = label_mapping[sentiment_prediction]
-    sentiment_confidence = predicted_probs[sentiment_prediction].item()
-
-    return sentiment_label, sentiment_confidence
-
-def predict_severity(input_text):
-    input_tfidf = tfidf_vectorizer.transform([input_text])
-    severity_prediction = severity_model.predict(input_tfidf)[0]
-
-    if severity_prediction == 2:
-        action_status = 1
-        action_message = "Acil Harekete Geçin!"
-    elif severity_prediction == 1:
-        action_status = 1
-        action_message = "Aksiyon Almanız Önerilir."
-    else:
-        action_status = 0
-        action_message = "Harekete Geçmeye Gerek Yok."
-    
-    return severity_prediction, action_status, action_message
-
-def predict_multilabel(input_text):
-    input_tfidf = tfidf_vectorizer.transform([input_text])
-    multilabel_prediction = multilabel_model.predict(input_tfidf)
-
-    return {
-        'bilet': multilabel_prediction[0][0],
-        'musteri_hizmetleri': multilabel_prediction[0][1],
-        'odeme': multilabel_prediction[0][2],
-        'uygulama': multilabel_prediction[0][3],
-        'passolig': multilabel_prediction[0][4],
-        'passolig kart': multilabel_prediction[0][5],
-        'diger': multilabel_prediction[0][6],
-    }
-
-def predict_all_models(input_text):
-    entity_prediction = predict_entity(input_text)
-    konu_prediction = predict_konu(input_text)
-    sentiment_prediction, sentiment_confidence = predict_sentiment(input_text)
-    severity_prediction, action_status, action_message = predict_severity(input_text)
-    multilabel_prediction = predict_multilabel(input_text)
-
-    return {
-        'Entity': entity_prediction,
-        'Konu': konu_prediction,
-        'Sentiment': {
-            'label': sentiment_prediction,
-            'confidence': sentiment_confidence
-        },
-        'Severity': {
-            'severity_label': severity_prediction,
-            'action_status': action_status,
-            'action_message': action_message
-        },
-        'Multilabel': multilabel_prediction
-    }
-
-# Ana çalışma döngüsü
 if __name__ == "__main__":
-    # Var olan verileri yükle ya da yeni bir DataFrame oluştur
-    try:
-        df = pd.read_csv('user_input.csv')
-    except FileNotFoundError:
-        df = pd.DataFrame(columns=['text', 'entity', 'sentiment', 'konu', 'severity', 
-                                   'bilet', 'musteri_hizmetleri', 'odeme', 
-                                   'uygulama', 'passolig', 'passolig kart', 
-                                   'diger', 'aksiyon'])
+    data_path = 'data/processed/cleaned_df.csv'
 
+    # Train Random Forest model
+    rf_model_output_path = 'data/models/multilabel/multilabelclassifier.pkl'
+    train_random_forest(data_path, rf_model_output_path)
+
+    # Train Gradient Boosting model
+    gb_model_output_path = 'data/models/severity_classifier.pkl'
+    train_gradient_boosting(data_path, gb_model_output_path)
+
+    # Train Transformer model
+    transformer_model_output_path = 'data/models/sentiment_classifier'
+    train_transformer_model(data_path, transformer_model_output_path)
+
+    # Test models with user input
     while True:
         test_input = input("Bir metin girin (çıkmak için 'q' yazın): ")
         if test_input.lower() == 'q':
             break
+        print("\nRandom Forest Model Tahminleri:")
+        test_model(rf_model_output_path, test_input)
         
-        # Modellerden tahmin al
-        results = predict_all_models(test_input)
-
-        # Sonuçları terminalde göster
-        print("\nTahmin Sonuçları:")
-        for model, prediction in results.items():
-            if model == 'Sentiment':
-                print(f"{model}: {prediction['label']} (Güven: {prediction['confidence']:.2f})")
-            elif model == 'Severity':
-                print(f"{model}: Severity {prediction['severity_label']}, Aksiyon Durumu: {prediction['action_status']} ({prediction['action_message']})")
-            else:
-                print(f"{model}: {prediction}")
-
-        # Tahmin sonuçlarını DataFrame'e ekle
-        new_row = pd.DataFrame([{
-            'text': test_input,
-            'entity': results['Entity'],
-            'sentiment': results['Sentiment']['label'],
-            'konu': results['Konu'],
-            'severity': results['Severity']['severity_label'],
-            'bilet': results['Multilabel']['bilet'],
-            'musteri_hizmetleri': results['Multilabel']['musteri_hizmetleri'],
-            'odeme': results['Multilabel']['odeme'],
-            'uygulama': results['Multilabel']['uygulama'],
-            'passolig': results['Multilabel']['passolig'],
-            'passolig kart': results['Multilabel']['passolig kart'],
-            'diger': results['Multilabel']['diger'],
-            'aksiyon': results['Severity']['action_status']
-        }])
-
-        df = pd.concat([df, new_row], ignore_index=True)
-
-        # DataFrame'i CSV dosyasına kaydet
-        df.to_csv('user_input.csv', index=False)
-        print("Tahmin sonuçları user_input.csv dosyasına kaydedildi.")
+        print("\nGradient Boosting Model Tahminleri:")
+        test_model(gb_model_output_path, test_input)
+        
+        print("\nTransformer Model Tahminleri:")
+        test_model(transformer_model_output_path, test_input)
