@@ -2,8 +2,7 @@
 
 **English version is below!**
 
-**Geliştirici**: Ali Rıza Ercan
-**LinkedIn**: [Ali Rıza Ercan](https://www.linkedin.com/in/alirizaercann/)
+**Geliştirici**: [Ali Rıza Ercan](https://www.linkedin.com/in/alirizaercann/)
 
 ## Türkçe [TR]
 
@@ -54,9 +53,9 @@ Veri ön işleme adımının tamamlanmasının ardından, ilgili sütunlar manue
 ### Keşifçi Veri Analizi
 Manuel veri etiketlendikten sonra, verileri kontrol etmek için `notebooks/EDA/eda_notebook.ipynb` dosyasında keşifçi veri analizi yapılmış ve görselleştirmeler oluşturulmuştur. Aşağıda görselleştirmelere ait örnekler verilmiştir:
 
-![**Görsel 1.**](action.png)
-![**Görsel 2.**](konu.png)
-![**Görsel 3.**](sentiment.png)
+![**Görsel 1.**](images/action.png)
+![**Görsel 2.**](images/konu.png)
+![**Görsel 3.**](images/severity.png)
 
 ### Model Eğitimi
 EDA notebook'tan sonra, `notebooks/model_sentiment_training.ipynb` dosyasında, Hugging Face'ten alınan BERT tabanlı Türkçe modeli olan `saribasmetehan/bert-base-turkish-sentiment-analysis` ile sentiment modeli eğitilmiştir.
@@ -104,8 +103,7 @@ Passo Assist uygulaması lokal olarak çalışıyor olmalıdır. PassoAssist cha
 
 ## English [EN]
 
-**Developer**: Ali Rıza Ercan
-**LinkedIn**: [Ali Rıza Ercan](https://www.linkedin.com/in/alirizaercann/)
+**Developer**: [Ali Rıza Ercan](https://www.linkedin.com/in/alirizaercann/)
 
 ### Project Description
 
@@ -154,9 +152,9 @@ Once the data preprocessing step is completed, the relevant columns are manually
 ### Exploratory Data Analysis
 After manual data labeling, exploratory data analysis is conducted in the `notebooks/EDA/eda_notebook.ipynb` file to inspect and visualize the data. Below are examples of the visualizations:
 
-![**Figure 1.**](action.png)
-![**Figure 2.**](konu.png)
-![**Figure 3.**](sentiment.png)
+![**Figure 1.**](images/action.png)
+![**Figure 2.**](images/konu.png)
+![**Figure 3.**](images/severity.png)
 
 ### Model Training
 Following the EDA notebook, the sentiment model is trained in the `notebooks/model_sentiment_training.ipynb` file using the BERT-based model for Turkish, `saribasmetehan/bert-base-turkish-sentiment-analysis`, obtained from Hugging Face.
