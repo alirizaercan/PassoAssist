@@ -67,9 +67,6 @@ The PassoAssist chatbot will now be running locally, accessible from the lower-r
 ### Troubleshooting and Contributions
 If you encounter any issues or have suggestions, you can report them in the Issues section of the GitHub repository. Additionally, feel free to reach out on LinkedIn or contribute to the project. The project is open-source, and contributions are welcome.
 
-Following these steps will allow you to set up and run the PassoAssist project, and you can create a `README` or `run.md` file with this guide.
-
-
 
 
 

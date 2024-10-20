@@ -62,10 +62,6 @@ python app.py
 ### Sorunlar ve Katkıda Bulunma
 Proje ile ilgili sorunlarınızı Issues kısmında belirtebilir veya LinkedIn üzerinden iletişime geçebilirsiniz.
 
-Bu adımları izleyerek projenin nasıl kurulacağını ve kullanılacağını açıklayan bir `README` ya da `setup_instructions.md` dosyası hazırlamış olursunuz.
-
-
-
 
 
 
