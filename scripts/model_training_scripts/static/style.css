@@ -44,28 +44,19 @@ nav ul li a {
     gap: 10px;
 }
 
-.search-bar input,
-.chat-input input {
-    padding: 10px;
+.search-bar input {
+    padding: 5px;
     border: 1px solid #ccc;
-    border-radius: 20px;
-    outline: none;
+    border-radius: 5px;
 }
 
-.search-bar button,
-.chat-input button {
-    background-color: #f44336;
+.search-bar button {
+    background-color: red;
     color: white;
     border: none;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 5px 10px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.search-bar button:hover,
-.chat-input button:hover {
-    background-color: #d32f2f;
 }
 
 .user-menu {
@@ -134,7 +125,7 @@ footer {
     border: 2px solid #cccccc;
     border-radius: 20px;
     box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
-    display: flex;
+    display: block;
     flex-direction: column;
     overflow: hidden;
 }
@@ -196,6 +187,30 @@ footer {
     border-bottom-right-radius: 20px;
 }
 
+.chat-input input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cccccc;
+    border-radius: 20px;
+    margin-right: 10px;
+    outline: none;
+}
+
+.chat-input button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.chat-input button:hover {
+    background-color: #d32f2f;
+}
+
+/* Kullanıcı ve Bot Mesajları */
 .chat-body {
     display: flex;
     flex-direction: column;
@@ -292,22 +307,6 @@ footer {
     .chatbot-toggle img {
         width: 50px;
         height: 50px;
-    }
-
-    /* Mobil görünüm için diğer ayarlar */
-    header, .search-bar, .categories, .category-grid {
-        flex-direction: column; /* Dikey hizalama */
-        align-items: center; /* Ortalamak için */
-        gap: 10px; /* Elemanlar arası boşluk */
-    }
-
-    nav ul {
-        flex-direction: column; /* Dikey yönlendirme */
-    }
-
-    .category-item img {
-        width: 100%; /* Mobilde tam genişlik */
-        height: auto; /* Oranları koru */
     }
 }
 

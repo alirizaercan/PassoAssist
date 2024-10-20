@@ -1,59 +1,61 @@
 import pandas as pd
-import joblib  # joblib is used to load models
+import joblib  # joblib kütüphanesini kullanıyoruz
 import re
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# 'konu' labels
+# 'konu' değerleri
 konu_labels = [
     'cagri merkezi yetkinlik', 'diger', 'genel', 'odeme', 'uygulama',
     'iptal', 'degisiklik', 'uyelik', 'iade', 'transfer', 'fatura'
 ]
 
-# Paths to the models
+# Model yolları
 entity_model_path = 'data/models/entity_model.joblib'
-konu_model_path = 'data/models/konu_model.joblib'   
-multilabel_model_path = 'data/models/multilabel/multilabelclassifier.joblib'
+konu_model_path = 'data/models/konu_model.joblib'
 sentiment_model_path = 'data/models/sentiment/saribasmetehan_sentiment_model'
 severity_model_path = 'data/models/severity_classifier.joblib'
+multilabel_model_path = 'data/models/multilabel/multilabelclassifier.joblib'
 
-# Load models
+# Modelleri yükle
 def load_model(path):
     return joblib.load(path)
 
 try:
     entity_model = load_model(entity_model_path)
 except Exception as e:
-    print(f"Error loading entity model: {e}")
+    print(f"Entity model yüklenirken hata oluştu: {e}")
 
 try:
     konu_model = load_model(konu_model_path)
 except Exception as e:
-    print(f"Error loading 'konu' model: {e}")
+    print(f"Konu model yüklenirken hata oluştu: {e}")
 
 try:
     loaded_model = load_model(severity_model_path)
-    severity_model = loaded_model[0] if isinstance(loaded_model, tuple) else loaded_model
+    if isinstance(loaded_model, tuple):
+        severity_model = loaded_model[0]
+    else:
+        severity_model = loaded_model
 except Exception as e:
-    print(f"Error loading severity model: {e}")
+    print(f"Severity model yüklenirken hata oluştu: {e}")
 
 try:
     multilabel_model, tfidf_vectorizer = load_model(multilabel_model_path)
 except Exception as e:
-    print(f"Error loading multilabel model: {e}")
+    print(f"Multilabel model yüklenirken hata oluştu: {e}")
 
 try:
     tokenizer = AutoTokenizer.from_pretrained(sentiment_model_path)
     sentiment_model = AutoModelForSequenceClassification.from_pretrained(sentiment_model_path)
 except Exception as e:
-    print(f"Error loading sentiment model: {e}")
+    print(f"Sentiment model yüklenirken hata oluştu: {e}")
 
-# Functions for entity prediction
+# Entity tahmini için gerekli fonksiyonlar
 def correct_spelling(sentence):
     corrected_spellings = {
         "passolg": "passolig",
         "passolig krt": "passolig kart",
-        "krt": "kart"  # Bu satırı ekleyin
     }
     words = sentence.split()
     corrected_words = [corrected_spellings.get(word.lower(), word) for word in words]
@@ -61,12 +63,22 @@ def correct_spelling(sentence):
 
 def find_entities(sentence, entity_list):
     corrected_sentence = correct_spelling(sentence)
-    found_entities = [entity for entity in entity_list if re.search(rf'\b{entity}(?:\w+)?\b', corrected_sentence, re.IGNORECASE)]
-    return "; ".join(found_entities) if found_entities else "No entity found."
+    found_entities = []
+    for entity in entity_list:
+        pattern = rf'\b{entity}(?:\w+)?\b'
+        if re.search(pattern, corrected_sentence, re.IGNORECASE):
+            found_entities.append(entity)
+    return found_entities
+
+def process_sentence(sentence, entity_list):
+    found_entities = find_entities(sentence, entity_list)
+    if found_entities:
+        return "; ".join(found_entities)
+    return "No entity found."
 
 def predict_entity(input_text):
     entities = ["passo", "passolig", "passolig kart"]
-    return find_entities(input_text, entities)
+    return process_sentence(input_text, entities)
 
 def predict_konu(input_text):
     predicted_label = konu_model.predict([input_text])
@@ -89,8 +101,15 @@ def predict_severity(input_text):
     input_tfidf = tfidf_vectorizer.transform([input_text])
     severity_prediction = severity_model.predict(input_tfidf)[0]
 
-    action_status = 1 if severity_prediction in [1, 2] else 0
-    action_message = "Acil Harekete Geçin!" if severity_prediction == 2 else "Aksiyon Almanız Önerilir." if severity_prediction == 1 else "Harekete Geçmeye Gerek Yok."
+    if severity_prediction == 2:
+        action_status = 1
+        action_message = "Acil Harekete Geçin!"
+    elif severity_prediction == 1:
+        action_status = 1
+        action_message = "Aksiyon Almanız Önerilir."
+    else:
+        action_status = 0
+        action_message = "Harekete Geçmeye Gerek Yok."
     
     return severity_prediction, action_status, action_message
 
@@ -130,9 +149,9 @@ def predict_all_models(input_text):
         'Multilabel': multilabel_prediction
     }
 
-# Main execution loop
+# Ana çalışma döngüsü
 if __name__ == "__main__":
-    # Load existing data or create a new DataFrame
+    # Var olan verileri yükle ya da yeni bir DataFrame oluştur
     try:
         df = pd.read_csv('user_input.csv')
     except FileNotFoundError:
@@ -142,24 +161,24 @@ if __name__ == "__main__":
                                    'diger', 'aksiyon'])
 
     while True:
-        test_input = input("Enter text (type 'q' to quit): ")
+        test_input = input("Bir metin girin (çıkmak için 'q' yazın): ")
         if test_input.lower() == 'q':
             break
         
-        # Run predictions
+        # Modellerden tahmin al
         results = predict_all_models(test_input)
 
-        # Show results in terminal
-        print("\nPrediction Results:")
+        # Sonuçları terminalde göster
+        print("\nTahmin Sonuçları:")
         for model, prediction in results.items():
             if model == 'Sentiment':
-                print(f"{model}: {prediction['label']} (Confidence: {prediction['confidence']:.2f})")
+                print(f"{model}: {prediction['label']} (Güven: {prediction['confidence']:.2f})")
             elif model == 'Severity':
-                print(f"{model}: Severity {prediction['severity_label']}, Action Status: {prediction['action_status']} ({prediction['action_message']})")
+                print(f"{model}: Severity {prediction['severity_label']}, Aksiyon Durumu: {prediction['action_status']} ({prediction['action_message']})")
             else:
                 print(f"{model}: {prediction}")
 
-        # Append prediction results to DataFrame
+        # Tahmin sonuçlarını DataFrame'e ekle
         new_row = pd.DataFrame([{
             'text': test_input,
             'entity': results['Entity'],
@@ -178,7 +197,6 @@ if __name__ == "__main__":
 
         df = pd.concat([df, new_row], ignore_index=True)
 
-        # Save DataFrame to CSV
-        df.to_csv('data/test/test.csv', index=False)
-        print("Prediction results saved to test_nlp.csv.")
-
+        # DataFrame'i CSV dosyasına kaydet
+        df.to_csv('user_input.csv', index=False)
+        print("Tahmin sonuçları user_input.csv dosyasına kaydedildi.")

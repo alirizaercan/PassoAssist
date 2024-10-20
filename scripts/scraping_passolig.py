@@ -13,7 +13,7 @@ driver = webdriver.Chrome(options=options)
 base_url = 'https://www.sikayetvar.com/passolig?page='
 
 # CSV file setup
-csv_file = 'C:/Users/Ali Riza Ercan/Desktop/Data Science/PassoAssist/PassoAssist/data/raw/raw_data_passo.csv'
+csv_file = 'data/raw/raw_data_passo.csv'
 fields = [
     'text',
     'entity',

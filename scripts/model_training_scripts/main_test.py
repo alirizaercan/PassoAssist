@@ -1,43 +1,30 @@
-# app.py
-# Flask uygulamasını başlatan ana dosya.
-# API endpoint'lerini burada tanımlayabiliriz.
-
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from flask import Flask, render_template, request, jsonify
-from src.nlp.text_cleaning import process_user_input
-from src.nlp.response_generator import predict_all_models, generate_professional_response
+from cleaning_service import process_user_input
+from response_with_all_models import predict_all_models, generate_professional_response
 import pandas as pd
 import numpy as np
-import os
 
-app = Flask(__name__, template_folder="../web/templates", static_folder="../web/static")
+app = Flask(__name__)
 
-# Define CSS version for cache-busting
-CSS_VERSION = "1.0.1"
+# CSS versiyonu
+CSS_VERSION = "1.0.1"  # Bu versiyonu her değişiklikte güncelleyin
 
-# Route for the home page
+# Ana sayfa için rota
 @app.route('/')
 def home():
-    return render_template('index.html', version=CSS_VERSION)
+    return render_template('passo.html', version=CSS_VERSION)
 
-# Chatbot route for handling user input
 @app.route('/chatbot', methods=['POST'])
-def chatbot():
+def clean_text():
     try:
         data = request.get_json()
         user_input = data.get('text', '')
 
         if not user_input:
-            return jsonify({'error': 'Input text is required!'}), 400
-        
-        contractions_json_path = os.path.join(os.path.dirname(__file__), '../data/json/contractions.json')
-        stopwords_json_path = os.path.join(os.path.dirname(__file__), '../data/json/stopwords.json')
+            return jsonify({'error': 'Metin verisi gerekli!'}), 400
 
-        # Clean the user input
-        cleaned_text = process_user_input(user_input, contractions_json_path, stopwords_json_path, to_english=True)
+        # Kullanıcı girişini temizle
+        cleaned_text = process_user_input(user_input, to_english=True)
 
         # Önceden tanımlanmış yanıtlar
         predefined_responses = {
@@ -57,7 +44,7 @@ def chatbot():
 
         # Önceden tanımlanmış yanıtları kontrol et
         if any(greeting in user_input.lower() for greeting in [
-            'merhaba', 'selam', 'hey', 'selamlar', 'merhabalar',
+            'merhaba', 'selam', 'hi', 'hey', 'selamlar', 'merhabalar',
             'merhabe', 'selamlasma', 'merhabalarim', 'merhaba arkadas',
             'selam dostum', 'merhaba arkadasim']):
             response_message = predefined_responses['greeting']
@@ -102,7 +89,7 @@ def chatbot():
             response_message = generate_professional_response(model_outputs)
 
 
-        # Return the response in JSON format
+        # JSON formatında yanıt döndürme
         response = jsonify({
             'text': user_input,
             'cleaned_text': cleaned_text,
@@ -110,7 +97,9 @@ def chatbot():
             'response_message': response_message
         })
         
-                # Veriyi CSV'ye kaydetme
+        print(model_outputs)
+        
+        # Veriyi CSV'ye kaydetme
         new_row = pd.DataFrame([{
             'text': user_input,
             'entity': model_outputs['Entity'] if 'Entity' in model_outputs else '',
@@ -130,23 +119,19 @@ def chatbot():
         }])
 
         # CSV dosyasını güncelleme
-        csv_file_path = 'data/user_input.csv'
-
-        # Öncelikle dosyanın var olup olmadığını kontrol edin
-        if os.path.exists(csv_file_path):
-            df = pd.read_csv(csv_file_path)
-        else:
+        try:
+            df = pd.read_csv('data/test/test_input.csv')
+        except FileNotFoundError:
             df = pd.DataFrame(columns=['text', 'entity', 'sentiment', 'konu', 
-                                    'severity', 'bilet', 'musteri_hizmetleri',
-                                    'odeme', 'uygulama', 'passolig', 
-                                    'passolig kart', 'diger', 'aksiyon',
-                                    'sentiment_confidence', 'response'])
+                                       'severity', 'bilet', 'musteri_hizmetleri',
+                                       'odeme', 'uygulama', 'passolig', 
+                                       'passolig kart', 'diger', 'aksiyon',
+                                       'sentiment_confidence',  'response'])
 
-        # DataFrame birleştirme işlemi
         df = pd.concat([df, new_row], ignore_index=True)
-        df.to_csv(csv_file_path, index=False)
+        df.to_csv('data/test/test_input.csv', index=False)
         print("Veriler kaydedildi.")
-                
+        
 
         # Önbellek kontrol başlıklarını ekle
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'

@@ -12,7 +12,7 @@ driver = webdriver.Chrome(options=options)
 base_url = 'https://www.sikayetvar.com/passo?page='
 
 # CSV file setup
-csv_file = 'C:/Users/Ali Riza Ercan/Desktop/Data Science/PassoAssist/PassoAssist/data/raw/raw_data.csv'
+csv_file = 'data/raw/passo_topic_title.csv'
 fields = ['text', 'bilet_iade', 'giris_sorun', 'musteri_hiz', 'odeme_sorun', 'uygulama_hata', 'diger', 'severity', 'konu', 'aksiyon', 'sentiment']
 
 def scrape_page(page_url):
