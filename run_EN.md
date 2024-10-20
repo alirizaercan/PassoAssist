@@ -67,6 +67,10 @@ The PassoAssist chatbot will now be running locally, accessible from the lower-r
 ### Troubleshooting and Contributions
 If you encounter any issues or have suggestions, you can report them in the Issues section of the GitHub repository. Additionally, feel free to reach out on LinkedIn or contribute to the project. The project is open-source, and contributions are welcome.
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> a9bc28dcd6f4e36cdcf70f9843f162447f407fd9
 
 
 

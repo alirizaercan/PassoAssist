@@ -62,6 +62,12 @@ python app.py
 ### Sorunlar ve Katkıda Bulunma
 Proje ile ilgili sorunlarınızı Issues kısmında belirtebilir veya LinkedIn üzerinden iletişime geçebilirsiniz.
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> a9bc28dcd6f4e36cdcf70f9843f162447f407fd9
 
 
 
