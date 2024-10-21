@@ -100,6 +100,11 @@ def scrape_all_pages(base_url, start_page=1, end_page=100, keyword_filter=None):
             writer.writerows(new_complaints)  # Append new complaints
 
     else:
+
+        csv_dir = os.path.dirname(csv_file)
+        if not os.path.exists(csv_dir):
+            os.makedirs(csv_dir)
+
         # Create new CSV file and write header
         with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=fields)
